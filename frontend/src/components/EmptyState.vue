@@ -7,6 +7,14 @@
 
 <script setup>
 defineProps({
+  <view class="empty-state">
+    <image class="empty-state__image" :src="image" mode="aspectFit" />
+    <text class="empty-state__text">{{ text }}</text>
+  </view>
+</template>
+
+<script setup>
+const props = defineProps({
   text: {
     type: String,
     default: '暂无数据'
@@ -25,6 +33,10 @@ defineProps({
   justify-content: center;
   flex-direction: column;
   padding: 40px 0;
+
+  @extend .flex-center;
+  flex-direction: column;
+  padding: 80rpx 0;
   color: $color-muted;
 }
 
@@ -36,5 +48,12 @@ defineProps({
 
 .empty-state__text {
   font-size: 14px;
+  width: 240rpx;
+  height: 240rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-state__text {
+  font-size: 28rpx;
 }
 </style>

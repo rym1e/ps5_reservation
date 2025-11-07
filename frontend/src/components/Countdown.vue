@@ -1,5 +1,6 @@
 <template>
   <div class="countdown">{{ display }}</div>
+  <view class="countdown">{{ display }}</view>
 </template>
 
 <script setup>
@@ -52,6 +53,7 @@ watch(
 <style scoped lang="scss">
 .countdown {
   font-size: 18px;
+  font-size: 36rpx;
   font-weight: 600;
   color: $color-danger;
 }

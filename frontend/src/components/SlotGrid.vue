@@ -15,12 +15,26 @@
       </div>
     </div>
   </div>
+  <view class="slot-grid">
+    <view v-for="group in grouped" :key="group.date" class="slot-grid__group">
+      <view class="slot-grid__header">{{ group.date }}</view>
+      <view class="slot-grid__items">
+        <view
+          v-for="slot in group.slots"
+          :key="slot.start_time"
+          :class="['slot-grid__item', itemClass(slot)]"
+          @tap="() => handleSelect(slot)"
+        >
+          <text class="slot-grid__hour">{{ slotLabel(slot) }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { showError } from '@/utils/toast.js';
-
+impo
 const props = defineProps({
   slots: {
     type: Array,
@@ -65,6 +79,7 @@ function slotLabel(slot) {
 function handleSelect(slot) {
   if (!slot.available && !slot.mine) {
     showError('该时段已被占用');
+    uni.showToast({ title: '该时段已被占用', icon: 'none' });
     return;
   }
   const nextValue = slot.start_time === props.modelValue ? '' : slot.start_time;
@@ -84,12 +99,25 @@ function handleSelect(slot) {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
+  gap: 24rpx;
+}
+
+.slot-grid__group {
+  @extend .card;
+}
+
+.slot-grid__header {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-bottom: 24rpx;
 }
 
 .slot-grid__items {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16rpx;
 }
 
 .slot-grid__item {
@@ -102,6 +130,11 @@ function handleSelect(slot) {
   background-color: $bg-muted;
   color: #1f2937;
   font-size: 14px;
+  height: 96rpx;
+  border-radius: 12rpx;
+  background-color: $bg-muted;
+  color: #1f2937;
+  font-size: 28rpx;
 }
 
 .slot-grid__item--available {

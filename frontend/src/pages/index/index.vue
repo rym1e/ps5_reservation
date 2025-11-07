@@ -25,6 +25,38 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+  <view class="page">
+    <view class="section card">
+      <view class="index__header">
+        <view class="index__title">选择预约时段</view>
+        <text class="index__subtitle">未来 72 小时内，每次预约 1 小时</text>
+        <text class="index__tips">请在支付时备注订单号以便快速核验</text>
+        <view v-if="hasActiveOrder" class="index__warning">您有未完成的订单，请先完成或取消后再预约。</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <slot-grid :slots="slotsStore.slots" v-model="selectedSlot" @select="handleSlotSelect" />
+    </view>
+
+    <view class="index__footer">
+      <button
+        type="primary"
+        class="index__button"
+        :disabled="createDisabled"
+        :loading="creating"
+        @tap="handleCreate"
+      >
+        {{ createButtonText }}
+      </button>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
+>>>>>>> main
 import SlotGrid from '@/components/SlotGrid.vue';
 import { useAuthStore } from '@/store/auth.js';
 import { useSlotsStore } from '@/store/slots.js';
@@ -32,6 +64,8 @@ import { useOrdersStore } from '@/store/orders.js';
 import { showError, showInfo } from '@/utils/toast.js';
 
 const router = useRouter();
+import { showError } from '@/utils/toast.js';
+
 const authStore = useAuthStore();
 const slotsStore = useSlotsStore();
 const ordersStore = useOrdersStore();
@@ -52,6 +86,7 @@ const createButtonText = computed(() => {
 });
 
 onMounted(async () => {
+onLoad(async () => {
   const authed = await authStore.ensureAuth();
   if (!authed) return;
   await slotsStore.loadSlots();
@@ -61,6 +96,8 @@ onMounted(async () => {
 function handleSlotSelect(slot) {
   if (slot.mine) {
     showInfo('该时段由您占用');
+
+    uni.showToast({ title: '该时段由您占用', icon: 'none' });
   }
 }
 
@@ -85,6 +122,11 @@ async function handleCreate() {
     });
   } catch (error) {
     // 错误提示已在 store 中处理
+    uni.navigateTo({
+      url: `/pages/pay/pay?orderId=${order.id}&expireAt=${encodeURIComponent(order.expire_at)}&orderNo=${order.order_no}`
+    });
+  } catch (error) {
+    // error toast handled in store
   } finally {
     creating.value = false;
   }
@@ -96,6 +138,9 @@ async function handleCreate() {
   min-height: 100vh;
   background-color: #f6f6f6;
   padding-bottom: 72px;
+.page {
+  min-height: 100vh;
+  background-color: #f6f6f6;
 }
 
 .index__header {
@@ -107,18 +152,25 @@ async function handleCreate() {
 .index__title {
   margin: 0;
   font-size: 18px;
+  gap: 12rpx;
+}
+
+.index__title {
+  font-size: 36rpx;
   font-weight: 600;
 }
 
 .index__subtitle {
   margin: 0;
   font-size: 14px;
+  font-size: 28rpx;
   color: #4b5563;
 }
 
 .index__tips {
   margin: 0;
   font-size: 12px;
+  font-size: 24rpx;
   color: $color-muted;
 }
 
@@ -156,5 +208,24 @@ async function handleCreate() {
 .index__button:disabled {
   background-color: #9ca3af;
   color: #ffffff;
+  margin-top: 16rpx;
+  padding: 16rpx;
+  background-color: #fef3c7;
+  color: #b45309;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
+
+.index__footer {
+  position: sticky;
+  bottom: 0;
+  padding: 24rpx 32rpx 48rpx;
+}
+
+.index__button {
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 999rpx;
+  background-color: $color-primary;
 }
 </style>
