@@ -1,0 +1,10 @@
+{
+  "name": "PS5 Reservation",
+  "appid": "",
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    }
+  }
+}
