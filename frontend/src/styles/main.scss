@@ -1,0 +1,42 @@
+@use './variables' as *;
+
+body {
+  margin: 0;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f6f6f6;
+  color: #1a1a1a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-muted {
+  color: $color-muted;
+}
+
+.section {
+  padding: 12px 16px;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
