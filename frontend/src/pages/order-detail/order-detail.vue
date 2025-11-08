@@ -1,103 +1,111 @@
 <template>
-  <view class="page" v-if="order">
-    <view class="section card">
-      <view class="detail__header">
-        <view>
-          <view class="detail__order-no">订单号：{{ order.order_no }}</view>
-          <view class="detail__time">创建时间：{{ order.created_at }}</view>
-        </view>
+  <div class="order-detail-page" v-if="order">
+    <section class="section card">
+      <div class="detail__header">
+        <div>
+          <div class="detail__order-no">订单号：{{ order.order_no }}</div>
+          <div class="detail__time">创建时间：{{ order.created_at }}</div>
+        </div>
         <status-tag :status="order.status" />
-      </view>
-    </view>
+      </div>
+    </section>
 
-    <view class="section card">
-      <view class="detail__block-title">预约信息</view>
-      <view class="detail__row">
-        <text class="detail__label">时段</text>
-        <text class="detail__value">{{ formatSlot(order.start_time, order.end_time) }}</text>
-      </view>
-      <view class="detail__row">
-        <text class="detail__label">金额</text>
-        <text class="detail__value">¥{{ (order.amount / 100).toFixed(2) }}</text>
-      </view>
-      <view class="detail__row">
-        <text class="detail__label">支付截止</text>
-        <text class="detail__value">{{ order.expire_at }}</text>
-      </view>
-    </view>
+    <section class="section card">
+      <div class="detail__block-title">预约信息</div>
+      <div class="detail__row">
+        <span class="detail__label">时段</span>
+        <span class="detail__value">{{ formatSlot(order.start_time, order.end_time) }}</span>
+      </div>
+      <div class="detail__row">
+        <span class="detail__label">金额</span>
+        <span class="detail__value">¥{{ (order.amount / 100).toFixed(2) }}</span>
+      </div>
+      <div class="detail__row">
+        <span class="detail__label">支付截止</span>
+        <span class="detail__value">{{ order.expire_at }}</span>
+      </div>
+    </section>
 
-    <view class="section card">
-      <view class="detail__block-title">支付凭证</view>
-      <view class="detail__proofs">
-        <image
+    <section class="section card">
+      <div class="detail__block-title">支付凭证</div>
+      <div class="detail__proofs">
+        <img
           v-for="proof in order.proofs || []"
           :key="proof.image_url"
           class="detail__proof"
           :src="proof.image_url"
-          mode="aspectFill"
+          alt="支付凭证"
         />
-      </view>
-      <button v-if="order.status === 'pending'" type="primary" @tap="goPay">去支付</button>
-      <button v-else-if="order.status === 'proof_submitted'" type="primary" @tap="goPay">追加凭证</button>
-    </view>
+      </div>
+      <button v-if="order.status === 'pending'" type="button" class="detail__action" @click="goPay">去支付</button>
+      <button v-else-if="order.status === 'proof_submitted'" type="button" class="detail__action" @click="goPay">
+        追加凭证
+      </button>
+    </section>
 
-    <view class="section card" v-if="order.status === 'pending'">
-      <button type="warn" @tap="handleCancel">取消订单</button>
-    </view>
-  </view>
+    <section class="section card" v-if="order.status === 'pending'">
+      <button type="button" class="detail__cancel" @click="handleCancel">取消订单</button>
+    </section>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import StatusTag from '@/components/StatusTag.vue';
 import { useOrdersStore } from '@/store/orders.js';
 import { formatSlotRange } from '@/utils/time.js';
 
+const route = useRoute();
+const router = useRouter();
 const ordersStore = useOrdersStore();
-const order = computed(() => ordersStore.current);
-let orderId = null;
 
-onLoad(async (options) => {
-  orderId = Number(options?.id);
+const order = computed(() => ordersStore.current);
+
+onMounted(async () => {
+  await fetchDetail();
+});
+
+watch(
+  () => route.params.orderId,
+  async () => {
+    await fetchDetail();
+  }
+);
+
+async function fetchDetail() {
+  const orderId = Number(route.params.orderId);
   if (!orderId) return;
   await ordersStore.loadOrderDetail(orderId);
-});
+}
 
 function formatSlot(start, end) {
   return formatSlotRange(start, end);
 }
 
 function goPay() {
-  uni.navigateTo({ url: `/pages/pay/pay?orderId=${order.value.id}` });
+  if (!order.value?.id) return;
+  router.push({ name: 'pay', params: { orderId: order.value.id } });
 }
 
 async function handleCancel() {
-  const confirm = await showConfirm('确定要取消该订单吗？');
-  if (!confirm) return;
+  if (!order.value?.id) return;
+  const confirmed = window.confirm('确定要取消该订单吗？');
+  if (!confirmed) return;
   try {
     await ordersStore.cancel(order.value.id);
     await ordersStore.loadOrderDetail(order.value.id);
   } catch (error) {
-    // toast handled in store
+    // 错误提示在 store 中处理
   }
-}
-
-function showConfirm(content) {
-  return new Promise((resolve) => {
-    uni.showModal({
-      title: '提示',
-      content,
-      success: (res) => resolve(res.confirm)
-    });
-  });
 }
 </script>
 
 <style scoped lang="scss">
-.page {
+.order-detail-page {
   min-height: 100vh;
   background-color: #f6f6f6;
+  padding-bottom: 24px;
 }
 
 .detail__header {
@@ -107,27 +115,27 @@ function showConfirm(content) {
 }
 
 .detail__order-no {
-  font-size: 32rpx;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .detail__time {
-  font-size: 26rpx;
+  font-size: 13px;
   color: #6b7280;
-  margin-top: 8rpx;
+  margin-top: 4px;
 }
 
 .detail__block-title {
-  font-size: 30rpx;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 24rpx;
+  margin-bottom: 12px;
 }
 
 .detail__row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 16rpx;
-  font-size: 28rpx;
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
 .detail__label {
@@ -140,14 +148,32 @@ function showConfirm(content) {
 
 .detail__proofs {
   display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .detail__proof {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: 16rpx;
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
   background-color: #f3f4f6;
+  object-fit: cover;
+}
+
+.detail__action {
+  border: none;
+  background-color: $color-primary;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+
+.detail__cancel {
+  border: none;
+  background-color: $color-danger;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 999px;
 }
 </style>

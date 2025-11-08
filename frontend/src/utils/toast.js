@@ -1,15 +1,15 @@
-export function showToast(title, options = {}) {
-  uni.showToast({
-    title,
-    icon: options.icon || 'none',
-    duration: options.duration || 2000
-  });
-}
-
 export function showError(message) {
-  showToast(message || '发生未知错误', { icon: 'none' });
+  window.alert(message || '发生未知错误');
 }
 
 export function showSuccess(message) {
-  showToast(message, { icon: 'success' });
+  if (message) {
+    window.alert(message);
+  }
+}
+
+export function showInfo(message) {
+  if (message) {
+    window.alert(message);
+  }
 }

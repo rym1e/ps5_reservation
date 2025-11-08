@@ -16,13 +16,14 @@ export function cancelOrder(orderId) {
 }
 
 export function fetchOrders({ status, page = 1, pageSize = 10 } = {}) {
-  const params = new URLSearchParams();
-  if (status) params.append('status', status);
-  params.append('page', page);
-  params.append('page_size', pageSize);
+  const params = {};
+  if (status) params.status = status;
+  params.page = page;
+  params.page_size = pageSize;
   return request({
-    url: `/api/orders?${params.toString()}`,
-    method: 'GET'
+    url: '/api/orders',
+    method: 'GET',
+    data: params
   });
 }
 
@@ -33,11 +34,10 @@ export function fetchOrderDetail(orderId) {
   });
 }
 
-export function uploadPaymentProof(orderId, filePath, note = '') {
+export function uploadPaymentProof(orderId, file, note = '') {
   return upload({
     url: `/api/orders/${orderId}/proofs`,
-    filePath,
-    name: 'images',
+    file,
     formData: { note }
   });
 }

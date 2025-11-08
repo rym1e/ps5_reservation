@@ -1,75 +1,80 @@
-# PS5 Reservation Mini Program
+# PS5 Reservation Frontend
 
-PS5 Reservation is a lightweight WeChat mini program that lets customers reserve a PS5 timeslot, submit payment proof, and track their order status. Administrators can review payment evidence, confirm or reject orders, and configure core business settings. The project targets a minimal, single-console deployment without high-availability requirements.
+PS5 Reservation 是一套极简的预约系统，用于管理单台/少量 PS5 的时段预约、人工核验支付以及订单状态追踪。当前仓库仅包含前端代码，基于 **Vite + Vue 3 + Pinia + Vue Router** 实现单页应用（SPA），后端（Go + Gin + MySQL）将于后续补充。
 
-## Repository layout
+## 仓库结构
 
-The repository is split into independent frontend and backend workspaces. Only the frontend skeleton is available at the moment – a Go (Gin) backend will be added later.
 
 ```
 .
-├── README.md                # Project overview and contribution guide
-└── frontend/                # Uni-App (Vue 3) mini program implementation
-    ├── package.json         # Frontend dependencies and scripts
-    ├── vite.config.js       # Vite + Uni-App build configuration
+├── README.md                # 项目说明
+└── frontend/                # Vite + Vue 3 前端工程
+    ├── index.html           # Vite 入口 HTML
+    ├── package.json         # 依赖与脚本
+    ├── vite.config.js       # Vite 配置（含路径别名）
     └── src/
-        ├── App.vue          # Root component
-        ├── main.js          # Application bootstrap with Pinia
-        ├── manifest.json    # Uni-App manifest (mini program target)
-        ├── pages.json       # Page and tab configuration
-        ├── components/      # Shared UI components (slot grid, countdown, etc.)
-        ├── pages/           # Route-aligned page views
-        ├── services/        # HTTP client and REST API wrappers
-        ├── store/           # Pinia stores (auth, slots, orders)
-        ├── utils/           # Time helpers, toast helpers
-        └── uni.scss         # Global styles and design tokens
+        ├── App.vue          # 根组件
+        ├── main.js          # 应用入口，挂载 Pinia 与 Router
+        ├── router/          # 路由定义（预约、支付、订单列表、订单详情）
+        ├── components/      # 通用组件（时段网格、倒计时、凭证上传等）
+        ├── pages/           # 页面视图
+        ├── services/        # REST API 请求封装
+        ├── store/           # Pinia 状态（鉴权、时段、订单）
+        ├── utils/           # 时间处理、提示工具
+        └── styles/          # 全局样式与主题变量
 ```
 
-## Frontend (Uni-App, Vue 3)
+## 快速开始
 
-The frontend follows the flow defined in the MVP requirements:
-
-1. WeChat login (wx.login) – handled via a dedicated auth store and backend-issued JWT tokens.
-2. 72-hour slot selection – rounded to the next whole hour with conflict checks.
-3. Order creation and payment guidance – static QR code, countdown, and remark hints.
-4. Payment proof upload – up to three images (≤5 MB each) with note/remark support.
-5. Order management – list, detail view, and allowed actions based on order state.
-6. Administrator functionality (web) will be implemented separately once the backend scaffold is available.
-
-### Getting started
-
-1. Install dependencies:
+1. 安装依赖：
    ```bash
    cd frontend
    npm install
    ```
-2. Run the mini program in WeChat developer mode:
+
+2. 启动开发服务器（默认 http://localhost:5173）：
    ```bash
-   npm run dev:mp-weixin
-   ```
-3. Build for production:
-   ```bash
-   npm run build:mp-weixin
+   npm run dev
    ```
 
-Refer to `frontend/README.md` (to be added later) for platform-specific configuration such as AppID, request domains, and environment variables.
+   前端会直接以 SPA 形式运行，适合在桌面浏览器中调试。若需要联调后端接口，可在运行命令前设置 `VITE_API_BASE_URL` 环境变量指向后端服务，例如：
+   ```bash
+   VITE_API_BASE_URL=https://api.example.com npm run dev
+   ```
 
-## Backend (Go + Gin, forthcoming)
+3. 构建生产包：
+   ```bash
+   npm run build
+   ```
 
-The backend service will expose REST APIs for authentication, slot management, order workflows, administrator verification, and configuration settings. Once the scaffolding is provided, the repository will include:
+4. 预览构建结果：
+   ```bash
+   npm run preview
+   ```
 
-- Go module with Gin HTTP server and MySQL integration.
-- Database migrations covering users, reservations, orders, payment proofs, admins, and settings tables.
-- Scheduled task to expire orders that pass their hold period.
-- JWT-based authentication for both user and admin clients.
+### 模拟登录
 
-## Contributing
+由于浏览器环境无法直接调用微信 `wx.login`，前端在没有现成 Token 时会尝试读取环境变量 `VITE_MOCK_WECHAT_CODE` 并调用 `POST /api/auth/wechat/login`。开发阶段可在 `.env.local` 中写入：
 
-1. Fork the repository and clone your fork.
-2. Use feature branches for development.
-3. Run linting and automated checks before submitting pull requests.
-4. Follow the product requirements and development guidelines in the shared documentation.
+```
+VITE_MOCK_WECHAT_CODE=your-mock-code
+```
 
-## License
+后端收到后返回 `{ token, user }` 即可完成前端鉴权逻辑。实际接入小程序时，可将该流程替换为真实的微信登录。
 
-This project is released under the MIT License. See `LICENSE` (to be added) for details.
+## 开发提示
+
+- REST 请求统一封装在 `src/services/http.js` 中，使用 `fetch` 实现，自动附带 `Authorization` 头并维护服务器时间偏移。
+- 图片上传（支付凭证）通过标准 `multipart/form-data` 完成，可直接对接任意支持表单上传的后端接口。
+- UI 采用轻量级自定义样式，未引入第三方组件库，便于后续根据视觉稿替换或扩展。
+- 预约逻辑遵循需求文档：72 小时窗口、整点粒度、订单锁定、凭证上传与状态流转等，可在 `src/pages` 中查看完整交互。
+
+## 后续计划
+
+待后端脚手架提交后，将补充：
+
+- Gin + MySQL 服务端实现（鉴权、预约、订单、后台核验等接口）。
+- 数据迁移与示例种子数据。
+- 自动化测试、Lint 与 CI 配置。
+
+欢迎提交 Issue 或 PR 讨论需求细节与技术实现。

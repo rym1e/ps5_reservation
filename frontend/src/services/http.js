@@ -7,7 +7,7 @@ export function getServerTimestamp() {
 }
 
 function updateServerTimeOffset(response) {
-  const dateHeader = response?.header?.Date || response?.header?.date;
+  const dateHeader = response.headers?.get('date');
   if (!dateHeader) return;
   const serverDate = new Date(dateHeader).getTime();
   if (!Number.isNaN(serverDate)) {
@@ -15,69 +15,94 @@ function updateServerTimeOffset(response) {
   }
 }
 
-export function request({ url, method = 'GET', data = {}, header = {}, skipAuth = false }) {
-  return new Promise((resolve, reject) => {
-    const token = skipAuth ? '' : uni.getStorageSync('token');
-    const finalHeaders = Object.assign({ 'Content-Type': 'application/json' }, header);
-    if (token && !skipAuth) {
-      finalHeaders.Authorization = `Bearer ${token}`;
-    }
-
-    uni.request({
-      url: url.startsWith('http') ? url : `${API_BASE_URL}${url}`,
-      method,
-      data,
-      header: finalHeaders,
-      success: (response) => {
-        updateServerTimeOffset(response);
-        const { statusCode, data: payload } = response;
-        if (statusCode >= 200 && statusCode < 300) {
-          resolve(payload);
-        } else if (statusCode === 401) {
-          uni.removeStorageSync('token');
-          reject({ code: 401, message: '未登录或登录已过期', payload });
-        } else {
-          reject({ code: payload?.code || statusCode, message: payload?.message || '请求失败', payload });
-        }
-      },
-      fail: (error) => {
-        reject({ code: -1, message: error.errMsg || '网络错误', error });
-      }
-    });
-  });
+function buildUrl(url, params) {
+  if (!params || Object.keys(params).length === 0) return url;
+  const searchParams = new URLSearchParams(params);
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${searchParams.toString()}`;
 }
 
-export function upload({ url, filePath, name = 'file', formData = {}, header = {} }) {
-  return new Promise((resolve, reject) => {
-    const token = uni.getStorageSync('token');
-    const finalHeaders = { ...header };
-    if (token) {
-      finalHeaders.Authorization = `Bearer ${token}`;
-    }
+export async function request({ url, method = 'GET', data, headers = {}, skipAuth = false }) {
+  const token = skipAuth ? '' : window.localStorage.getItem('token');
+  const finalHeaders = new Headers({ 'Content-Type': 'application/json', ...headers });
+  if (token && !skipAuth) {
+    finalHeaders.set('Authorization', `Bearer ${token}`);
+  }
 
-    uni.uploadFile({
-      url: url.startsWith('http') ? url : `${API_BASE_URL}${url}`,
-      filePath,
-      name,
-      formData,
-      header: finalHeaders,
-      success: (response) => {
-        updateServerTimeOffset(response);
-        let payload = response.data;
-        try {
-          payload = JSON.parse(response.data);
-        } catch (error) {
-          // ignore parse errors and return original data
-        }
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          resolve(payload);
-        } else {
-          reject({ code: response.statusCode, message: '上传失败', payload });
-        }
-      },
-      fail: (error) => {
-        reject({ code: -1, message: error.errMsg || '上传失败', error });
-      }
-    });
+  let requestUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  let body;
+
+  if (method.toUpperCase() === 'GET' && data) {
+    requestUrl = buildUrl(requestUrl, data);
+  } else if (data !== undefined) {
+    body = JSON.stringify(data);
+  }
+
+  const response = await fetch(requestUrl, {
+    method,
+    headers: finalHeaders,
+    body
   });
+
+  updateServerTimeOffset(response);
+
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+  const payload = isJson ? await response.json() : await response.text();
+
+  if (response.ok) {
+    return payload;
+  }
+
+  if (response.status === 401) {
+    window.localStorage.removeItem('token');
+    throw new Error(payload?.message || '未登录或登录已过期');
+  }
+
+  const message = payload?.message || `请求失败（${response.status}）`;
+  const error = new Error(message);
+  error.code = payload?.code || response.status;
+  error.payload = payload;
+  throw error;
+}
+
+export async function upload({ url, file, formData = {}, headers = {} }) {
+  if (!(file instanceof File)) {
+    throw new Error('无效的上传文件');
+  }
+
+  const token = window.localStorage.getItem('token');
+  const requestUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  const data = new FormData();
+
+  Object.entries(formData).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      data.append(key, value);
+    }
+  });
+
+  data.append('images', file);
+
+  const finalHeaders = new Headers(headers);
+  if (token) {
+    finalHeaders.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: finalHeaders,
+    body: data
+  });
+
+  updateServerTimeOffset(response);
+
+  const payload = await response.json();
+  if (response.ok) {
+    return payload;
+  }
+
+  const error = new Error(payload?.message || '上传失败');
+  error.code = payload?.code || response.status;
+  error.payload = payload;
+  throw error;
 }

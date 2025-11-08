@@ -1,4 +1,30 @@
 <template>
+  <div class="reservation-page">
+    <section class="section card">
+      <header class="index__header">
+        <h1 class="index__title">选择预约时段</h1>
+        <p class="index__subtitle">未来 72 小时内，每次预约 1 小时</p>
+        <p class="index__tips">请在支付时备注订单号以便快速核验</p>
+        <p v-if="hasActiveOrder" class="index__warning">您有未完成的订单，请先完成或取消后再预约。</p>
+      </header>
+    </section>
+
+    <section class="section">
+      <slot-grid :slots="slotsStore.slots" v-model="selectedSlot" @select="handleSlotSelect" />
+    </section>
+
+    <footer class="index__footer">
+      <button class="index__button" :disabled="createDisabled" @click="handleCreate">
+        <span v-if="creating">创建中...</span>
+        <span v-else>{{ createButtonText }}</span>
+      </button>
+    </footer>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
   <view class="page">
     <view class="section card">
       <view class="index__header">
@@ -30,10 +56,14 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+>>>>>>> main
 import SlotGrid from '@/components/SlotGrid.vue';
 import { useAuthStore } from '@/store/auth.js';
 import { useSlotsStore } from '@/store/slots.js';
 import { useOrdersStore } from '@/store/orders.js';
+import { showError, showInfo } from '@/utils/toast.js';
+
+const router = useRouter();
 import { showError } from '@/utils/toast.js';
 
 const authStore = useAuthStore();
@@ -55,6 +85,7 @@ const createButtonText = computed(() => {
   return '立即预约';
 });
 
+onMounted(async () => {
 onLoad(async () => {
   const authed = await authStore.ensureAuth();
   if (!authed) return;
@@ -64,6 +95,8 @@ onLoad(async () => {
 
 function handleSlotSelect(slot) {
   if (slot.mine) {
+    showInfo('该时段由您占用');
+
     uni.showToast({ title: '该时段由您占用', icon: 'none' });
   }
 }
@@ -79,6 +112,16 @@ async function handleCreate() {
       return;
     }
     await ordersStore.loadOrders({ reset: true, status: 'pending,proof_submitted' });
+    router.push({
+      name: 'pay',
+      params: { orderId: order.id },
+      query: {
+        expireAt: order.expire_at,
+        orderNo: order.order_no
+      }
+    });
+  } catch (error) {
+    // 错误提示已在 store 中处理
     uni.navigateTo({
       url: `/pages/pay/pay?orderId=${order.id}&expireAt=${encodeURIComponent(order.expire_at)}&orderNo=${order.order_no}`
     });
@@ -91,6 +134,10 @@ async function handleCreate() {
 </script>
 
 <style scoped lang="scss">
+.reservation-page {
+  min-height: 100vh;
+  background-color: #f6f6f6;
+  padding-bottom: 72px;
 .page {
   min-height: 100vh;
   background-color: #f6f6f6;
@@ -99,6 +146,12 @@ async function handleCreate() {
 .index__header {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.index__title {
+  margin: 0;
+  font-size: 18px;
   gap: 12rpx;
 }
 
@@ -108,16 +161,53 @@ async function handleCreate() {
 }
 
 .index__subtitle {
+  margin: 0;
+  font-size: 14px;
   font-size: 28rpx;
   color: #4b5563;
 }
 
 .index__tips {
+  margin: 0;
+  font-size: 12px;
   font-size: 24rpx;
   color: $color-muted;
 }
 
 .index__warning {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fef3c7;
+  color: #b45309;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.index__footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(246, 246, 246, 0), #f6f6f6 60%);
+  display: flex;
+  justify-content: center;
+}
+
+.index__button {
+  min-width: 240px;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+  background-color: $color-primary;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.index__button:disabled {
+  background-color: #9ca3af;
+  color: #ffffff;
   margin-top: 16rpx;
   padding: 16rpx;
   background-color: #fef3c7;

@@ -1,4 +1,6 @@
 <template>
+  <span :class="['status-tag', `status-tag--${status}`]">{{ text }}</span>
+
   <view :class="['status-tag', `status-tag--${status}`]">{{ text }}</view>
 </template>
 
@@ -37,6 +39,9 @@ const text = computed(() => {
 .status-tag {
   display: inline-flex;
   align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
   padding: 4rpx 16rpx;
   border-radius: 999rpx;
   font-size: 24rpx;

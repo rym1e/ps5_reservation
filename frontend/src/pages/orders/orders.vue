@@ -1,66 +1,70 @@
 <template>
-  <view class="page">
-    <scroll-view scroll-y class="orders__scroll" @scrolltolower="handleReachBottom">
-      <view class="section card orders__filters">
-        <view
-          v-for="tab in statusTabs"
-          :key="tab.value"
-          :class="['orders__tab', tab.value === activeStatus ? 'orders__tab--active' : '']"
-          @tap="() => changeStatus(tab.value)"
-        >
-          {{ tab.label }}
-        </view>
-      </view>
+  <div class="orders-page">
+    <div class="section card orders__filters">
+      <button
+        v-for="tab in statusTabs"
+        :key="tab.value"
+        type="button"
+        :class="['orders__tab', tab.value === activeStatus ? 'orders__tab--active' : '']"
+        @click="() => changeStatus(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
 
-      <view class="section" v-if="ordersStore.list.length">
-        <view v-for="order in ordersStore.list" :key="order.id" class="orders__item card">
-          <view class="orders__item-header">
-            <view class="orders__order-no">订单号：{{ order.order_no }}</view>
-            <status-tag :status="order.status" />
-          </view>
-          <view class="orders__row">
-            <text class="orders__label">时段</text>
-            <text class="orders__value">{{ formatSlot(order.start_time, order.end_time) }}</text>
-          </view>
-          <view class="orders__row">
-            <text class="orders__label">金额</text>
-            <text class="orders__value">¥{{ (order.amount / 100).toFixed(2) }}</text>
-          </view>
-          <view class="orders__footer">
-            <button size="mini" @tap="() => goDetail(order.id)">查看详情</button>
-            <button
-              v-if="order.status === 'pending'"
-              size="mini"
-              type="warn"
-              @tap="() => handleCancel(order)"
-            >
-              取消订单
-            </button>
-            <button
-              v-else-if="order.status === 'proof_submitted'"
-              size="mini"
-              type="primary"
-              @tap="() => goPay(order)"
-            >
-              追加凭证
-            </button>
-          </view>
-        </view>
-      </view>
+    <div class="section" v-if="ordersStore.list.length">
+      <div v-for="order in ordersStore.list" :key="order.id" class="orders__item card">
+        <div class="orders__item-header">
+          <div class="orders__order-no">订单号：{{ order.order_no }}</div>
+          <status-tag :status="order.status" />
+        </div>
+        <div class="orders__row">
+          <span class="orders__label">时段</span>
+          <span class="orders__value">{{ formatSlot(order.start_time, order.end_time) }}</span>
+        </div>
+        <div class="orders__row">
+          <span class="orders__label">金额</span>
+          <span class="orders__value">¥{{ (order.amount / 100).toFixed(2) }}</span>
+        </div>
+        <div class="orders__footer">
+          <button type="button" @click="() => goDetail(order.id)">查看详情</button>
+          <button
+            v-if="order.status === 'pending'"
+            type="button"
+            class="orders__button--warn"
+            @click="() => handleCancel(order)"
+          >
+            取消订单
+          </button>
+          <button
+            v-else-if="order.status === 'proof_submitted'"
+            type="button"
+            class="orders__button--primary"
+            @click="() => goPay(order)"
+          >
+            追加凭证
+          </button>
+        </div>
+      </div>
+    </div>
 
-      <empty-state v-else text="暂无订单" />
-    </scroll-view>
-  </view>
+    <empty-state v-else text="暂无订单" />
+
+    <div class="orders__load-more" v-if="ordersStore.pagination.hasMore">
+      <button type="button" @click="loadMore">加载更多</button>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import StatusTag from '@/components/StatusTag.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { useOrdersStore } from '@/store/orders.js';
 import { formatSlotRange } from '@/utils/time.js';
 
+const router = useRouter();
 const ordersStore = useOrdersStore();
 
 const statusTabs = [
@@ -73,11 +77,11 @@ const statusTabs = [
 
 const activeStatus = ref('');
 
-onLoad(async () => {
+onMounted(async () => {
   await refreshList('');
 });
 
-function handleReachBottom() {
+function loadMore() {
   ordersStore.loadOrders();
 }
 
@@ -91,58 +95,47 @@ function changeStatus(status) {
 }
 
 function goDetail(orderId) {
-  uni.navigateTo({ url: `/pages/order-detail/order-detail?id=${orderId}` });
+  router.push({ name: 'order-detail', params: { orderId } });
 }
 
 function goPay(order) {
-  uni.navigateTo({ url: `/pages/pay/pay?orderId=${order.id}` });
+  router.push({ name: 'pay', params: { orderId: order.id } });
 }
 
 async function handleCancel(order) {
-  const confirm = await showConfirm('确定要取消该订单吗？');
+  const confirm = window.confirm('确定要取消该订单吗？');
   if (!confirm) return;
   try {
     await ordersStore.cancel(order.id);
   } catch (error) {
-    // toast handled in store
+    // 错误提示在 store 中处理
   }
 }
 
 function formatSlot(start, end) {
   return formatSlotRange(start, end);
 }
-
-function showConfirm(content) {
-  return new Promise((resolve) => {
-    uni.showModal({
-      title: '提示',
-      content,
-      success: (res) => resolve(res.confirm)
-    });
-  });
-}
 </script>
 
 <style scoped lang="scss">
-.page {
+.orders-page {
   min-height: 100vh;
   background-color: #f6f6f6;
-}
-
-.orders__scroll {
-  height: 100vh;
+  padding-bottom: 24px;
 }
 
 .orders__filters {
   display: flex;
-  gap: 16rpx;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .orders__tab {
-  padding: 16rpx 24rpx;
-  border-radius: 999rpx;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
   background-color: #e5e7eb;
-  font-size: 26rpx;
+  font-size: 13px;
   color: #4b5563;
 }
 
@@ -152,26 +145,26 @@ function showConfirm(content) {
 }
 
 .orders__item {
-  margin-bottom: 24rpx;
+  margin-bottom: 12px;
 }
 
 .orders__item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
+  margin-bottom: 8px;
 }
 
 .orders__order-no {
-  font-size: 28rpx;
+  font-size: 14px;
   color: #111827;
 }
 
 .orders__row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12rpx;
-  font-size: 26rpx;
+  margin-bottom: 6px;
+  font-size: 13px;
 }
 
 .orders__label {
@@ -184,8 +177,39 @@ function showConfirm(content) {
 
 .orders__footer {
   display: flex;
-  gap: 16rpx;
+  gap: 8px;
   justify-content: flex-end;
-  margin-top: 16rpx;
+  margin-top: 8px;
+}
+
+.orders__footer button {
+  border: none;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.orders__button--warn {
+  background-color: $color-danger;
+  color: #ffffff;
+}
+
+.orders__button--primary {
+  background-color: $color-primary;
+  color: #ffffff;
+}
+
+.orders__load-more {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.orders__load-more button {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background-color: $color-primary;
+  color: #ffffff;
 }
 </style>

@@ -1,4 +1,20 @@
 <template>
+  <div class="slot-grid">
+    <div v-for="group in grouped" :key="group.date" class="slot-grid__group card">
+      <div class="slot-grid__header">{{ group.date }}</div>
+      <div class="slot-grid__items">
+        <button
+          v-for="slot in group.slots"
+          :key="slot.start_time"
+          type="button"
+          :class="['slot-grid__item', itemClass(slot)]"
+          @click="() => handleSelect(slot)"
+        >
+          <span class="slot-grid__hour">{{ slotLabel(slot) }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
   <view class="slot-grid">
     <view v-for="group in grouped" :key="group.date" class="slot-grid__group">
       <view class="slot-grid__header">{{ group.date }}</view>
@@ -18,7 +34,7 @@
 
 <script setup>
 import { computed } from 'vue';
-
+impo
 const props = defineProps({
   slots: {
     type: Array,
@@ -62,6 +78,7 @@ function slotLabel(slot) {
 
 function handleSelect(slot) {
   if (!slot.available && !slot.mine) {
+    showError('该时段已被占用');
     uni.showToast({ title: '该时段已被占用', icon: 'none' });
     return;
   }
@@ -75,6 +92,13 @@ function handleSelect(slot) {
 .slot-grid {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.slot-grid__header {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
   gap: 24rpx;
 }
 
@@ -90,6 +114,8 @@ function handleSelect(slot) {
 
 .slot-grid__items {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16rpx;
 }
@@ -98,6 +124,12 @@ function handleSelect(slot) {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 48px;
+  border-radius: 8px;
+  border: none;
+  background-color: $bg-muted;
+  color: #1f2937;
+  font-size: 14px;
   height: 96rpx;
   border-radius: 12rpx;
   background-color: $bg-muted;
@@ -123,5 +155,9 @@ function handleSelect(slot) {
 .slot-grid__item--disabled {
   background-color: #e5e7eb;
   color: #9ca3af;
+}
+
+.slot-grid__hour {
+  pointer-events: none;
 }
 </style>

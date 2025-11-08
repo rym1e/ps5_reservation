@@ -30,9 +30,7 @@ export const useOrdersStore = defineStore('orders', () => {
         page: pagination.page,
         pageSize: pagination.pageSize
       });
-      const items = Array.isArray(response)
-        ? response
-        : response?.items || response?.list || [];
+      const items = Array.isArray(response) ? response : response?.items || response?.list || [];
       if (reset) {
         list.value = items;
       } else {
@@ -71,14 +69,16 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  async function appendProof(orderId, filePath, note) {
+  async function appendProof(orderId, file, note) {
     try {
-      const response = await uploadPaymentProof(orderId, filePath, note);
+      const response = await uploadPaymentProof(orderId, file, note);
       showSuccess('上传成功');
       if (current.value?.id === orderId) {
         current.value = { ...current.value, status: response?.status || 'proof_submitted' };
       }
-      list.value = list.value.map((item) => (item.id === orderId ? { ...item, status: response?.status || 'proof_submitted' } : item));
+      list.value = list.value.map((item) =>
+        item.id === orderId ? { ...item, status: response?.status || 'proof_submitted' } : item
+      );
     } catch (error) {
       showError(error.message || '上传失败');
       throw error;
