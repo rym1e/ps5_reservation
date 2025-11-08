@@ -1,0 +1,44 @@
+@import '@/../uni.scss';
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 35, 95, 0.08);
+}
+
+.page-padding {
+  padding: 32rpx;
+}
+
+.text-sub {
+  color: $sub-text-color;
+}
+
+.text-danger {
+  color: $danger-color;
+}
+
+.text-success {
+  color: $success-color;
+}
+
+.status-tag {
+  border-radius: 24rpx;
+  padding: 4rpx 16rpx;
+  font-size: 24rpx;
+  display: inline-flex;
+  align-items: center;
+}
+

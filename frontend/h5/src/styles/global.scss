@@ -1,0 +1,100 @@
+@import './variables.scss';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  color: $neutral-900;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.container {
+  width: min(1120px, 92vw);
+  margin: 0 auto;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-card;
+  padding: 32px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: $border-radius-md;
+  background: $primary-color;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:disabled {
+    background: $neutral-200;
+    color: $neutral-500;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: darken($primary-color, 4%);
+  }
+}
+
+.secondary-btn {
+  padding: 12px 24px;
+  border-radius: $border-radius-md;
+  border: 1px solid $neutral-200;
+  background: #fff;
+  color: $neutral-700;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
